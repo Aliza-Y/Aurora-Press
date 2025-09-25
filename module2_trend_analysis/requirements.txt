@@ -1,0 +1,7 @@
+APScheduler==3.10.4
+python-dotenv
+pymongo
+scikit-learn
+transformers
+spacy
+feedparser 

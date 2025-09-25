@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-rgb: 13, 17, 23;
+  --accent-teal: 45, 212, 191;
+  --terminal-bg: 22, 27, 34;
+  --background-start-rgb: 13, 17, 23;
+  --background-end-rgb: 17, 23, 35;
+  --accent-blue: 59, 130, 246;
+  --accent-purple: 139, 92, 246;
+  --accent-pink: 236, 72, 153;
+  --glitter-size: 3px;
+}
+
+/* Rest of the provided CSS content */
+@layer base {
+  body {
+    color: rgb(var(--foreground-rgb));
+    background: rgb(var(--background-rgb));
+    min-height: 100vh;
+  }
+
+  @keyframes float-up {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(2deg); }
+  }
+
+  @keyframes ripple {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+}
+
+/* All the component styles from the provided CSS */
+@layer components {
+  /* All the provided component styles */
+  .content-line {
+    @apply h-2 rounded-full my-2 transform origin-left;
+    animation: line-expand 0.6s ease-out forwards;
+  }
+
+  /* Rest of the component styles... */
+} 

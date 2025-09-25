@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground: #E2E8F0;
+  --background: #1A1C23;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-all duration-200;
+  }
+  
+  .btn-primary {
+    @apply bg-aurora-primary text-aurora-text hover:bg-opacity-90 px-4 py-2 rounded-full transition-all duration-300;
+  }
+  
+  .btn-secondary {
+    @apply bg-aurora-secondary text-white hover:bg-opacity-90 px-4 py-2 rounded-full transition-all duration-300;
+  }
+
+  .nav-link {
+    @apply text-aurora-text-secondary hover:text-aurora-text px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200;
+  }
+
+  .nav-link-active {
+    @apply text-aurora-primary hover:text-opacity-90;
+  }
+
+  .card {
+    @apply bg-aurora-card rounded-lg p-6 transition-all duration-200;
+  }
+
+  .trend-card {
+    @apply card flex flex-col gap-4 border border-transparent hover:border-aurora-primary/20 hover:shadow-lg hover:shadow-aurora-primary/10;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors duration-200;
+  }
+
+  .badge-primary {
+    @apply bg-aurora-primary bg-opacity-20 text-aurora-primary hover:bg-opacity-30;
+  }
+
+  .badge-secondary {
+    @apply bg-aurora-secondary bg-opacity-20 text-aurora-text-secondary hover:bg-opacity-30;
+  }
+
+  .input {
+    @apply bg-aurora-card border border-aurora-secondary rounded-md px-3 py-2 text-aurora-text focus:outline-none focus:ring-2 focus:ring-aurora-primary transition-all duration-200;
+  }
+
+  .dashboard-stat {
+    @apply bg-aurora-card rounded-lg p-6 border border-transparent hover:border-aurora-primary/20 transition-all duration-200;
+  }
+
+  .dashboard-stat-value {
+    @apply text-4xl font-bold text-aurora-text mb-2;
+  }
+
+  .dashboard-stat-label {
+    @apply text-sm text-aurora-text-secondary;
+  }
+
+  .dashboard-stat-trend {
+    @apply text-sm text-green-400;
+  }
+
+  /* Animations */
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-102;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-200 hover:-translate-y-1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-aurora-background;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-aurora-secondary rounded-full hover:bg-aurora-primary transition-colors duration-200;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-aurora-primary to-aurora-highlight bg-clip-text text-transparent;
+  }
+} 

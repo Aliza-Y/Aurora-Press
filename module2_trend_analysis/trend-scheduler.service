@@ -1,0 +1,15 @@
+[Unit]
+Description=AuroraPress Trend Scheduler
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/d/Final Year Project/aurorapress/module2_trend_analysis
+Environment=PYTHONPATH=/d/Final Year Project/aurorapress
+ExecStart=/d/Final Year Project/aurorapress/venv/Scripts/python scheduler.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 
