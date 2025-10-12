@@ -1,52 +1,54 @@
-from ..orchestrator.base import BaseAgent, register
-from ..db import transcripts, analysis
-from pathlib import Path
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import torch
+# module9_interview_ai/agents/claim_classify.py
+from __future__ import annotations
+from typing import List, Dict, Optional
+from .claim_classifier import ClaimClassifier  # loads your saved model
 
-MODEL_DIR = Path(__file__).resolve().parents[1] / "models" / "claim_distilbert"
+# -------- Lazy singleton --------
+_clf = None
 
-_tok = None
-_model = None
+def get_clf() -> ClaimClassifier:
+    global _clf
+    if _clf is None:
+        _clf = ClaimClassifier()   # <-- model loads here, on first use, not at import
+    return _clf
 
+def classify_segments_texts(texts: List[str], threshold: Optional[float] = None) -> List[Dict]:
+    clf = get_clf()
+    return clf.predict(texts, threshold=threshold if threshold is not None else 0.50)
 
-def _load_model():
-    global _tok, _model
-    if _tok is None or _model is None:
-        print(f"[ClaimClassifierAgent] loading {MODEL_DIR}")
-        _tok = AutoTokenizer.from_pretrained(str(MODEL_DIR))
-        _model = AutoModelForSequenceClassification.from_pretrained(str(MODEL_DIR))
-        _model.eval()
-    return _tok, _model
+# ------------------------ BaseAgent (uses the same lazy loader) ------------------------
+try:
+    from ..orchestrator.base import BaseAgent, register
+    from ..db import transcripts, analysis
+    LEGACY = True
+except Exception:
+    LEGACY = False
 
+if LEGACY:
+    @register
+    class ClaimClassifierAgent(BaseAgent):
+        name = "ClaimClassifierAgent"
+        def run(self, pipeline, tools):
+            iid = pipeline.get("interview_id")
+            tdoc = transcripts.find_one({"interview_id": iid}) or {}
+            segs = tdoc.get("segments", [])
+            if not segs:
+                return {"claims_predicted": 0, "note": "no segments found"}
 
-def score_claim(text: str, max_len=192) -> float:
-    tok, model = _load_model()
-    with torch.no_grad():
-        x = tok(text, return_tensors="pt", truncation=True, max_length=max_len)
-        logits = model(**x).logits
-        prob = torch.softmax(logits, dim=-1)[0,1].item()
-        return float(prob)
+            texts = [s["text"] for s in segs]
+            preds = get_clf().predict(texts, threshold=0.50)
 
+            total_claims = 0
+            for s, p in zip(segs, preds):
+                is_claim = 1 if p["label"] == "claim" else 0
+                s["claim"] = is_claim
+                s["claim_conf"] = float(p["proba_claim"])
+                total_claims += is_claim
 
-@register
-class ClaimClassifierAgent(BaseAgent):
-    name = "ClaimClassifierAgent"
-
-    def run(self, pipeline, tools):
-        iid = pipeline["interview_id"]
-        tx = transcripts.find_one({"interview_id": iid}) or {}
-        segs = tx.get("segments", [])
-        if not segs:
-            return {"claims_predicted": 0}
-
-        results = []
-        for i, s in enumerate(segs):
-            p = score_claim(s["text"])
-            if p >= 0.55:  # threshold; tune 0.5-0.65 after a few runs
-                results.append({"seg_idx": i, "text": s["text"], "score": round(p, 3)})
-
-        analysis.update_one({"interview_id": iid},
-                            {"$set": {"claim_candidates": results}},
-                            upsert=True)
-        return {"claims_predicted": len(results), "threshold": 0.55}
+            transcripts.update_one({"interview_id": iid}, {"$set": {"segments": segs}}, upsert=True)
+            analysis.update_one(
+                {"interview_id": iid},
+                {"$set": {"claim_threshold": 0.50, "claim_total": int(total_claims)}},
+                upsert=True
+            )
+            return {"claims_predicted": int(total_claims), "threshold": 0.50}

@@ -5,7 +5,11 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
         'Content-Type': 'application/json',
     };
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    // Don't send auth routes to backend - let NextAuth handle them
+    const isAuthRoute = endpoint.startsWith('/api/auth/');
+    const baseUrl = isAuthRoute ? '' : API_BASE_URL;
+
+    const response = await fetch(`${baseUrl}${endpoint}`, {
         ...options,
         headers: {
             ...defaultHeaders,

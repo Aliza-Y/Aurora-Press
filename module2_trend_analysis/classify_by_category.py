@@ -1,7 +1,13 @@
 import os
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from transformers import pipeline
+# Optional import for transformers
+try:
+    from transformers import pipeline
+    HAVE_TRANSFORMERS = True
+except ImportError:
+    HAVE_TRANSFORMERS = False
+    print("Warning: transformers not available. Category classification will be disabled.")
 
 # Load environment variables
 load_dotenv()
@@ -37,6 +43,10 @@ def classify_trend(text, classifier):
 
 def main():
     print("⚙️ Loading classification model...")
+    if not HAVE_TRANSFORMERS:
+        print("❌ Transformers not available. Skipping classification.")
+        return
+        
     try:
         classifier = pipeline("zero-shot-classification", 
                             model="MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli")

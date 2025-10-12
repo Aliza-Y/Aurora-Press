@@ -51,7 +51,10 @@ const handler = NextAuth({
           throw new Error('Please enter an email and password');
         }
 
-        await connectDB();
+        const db = await connectDB();
+        if (!db) {
+          throw new Error('Database connection failed. Please try again later.');
+        }
 
         // Find user
         const user = await User.findOne({ email: credentials.email });
@@ -87,7 +90,7 @@ const handler = NextAuth({
   session: {
     strategy: 'jwt'
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development',
   pages: {
     signIn: '/auth',
     signOut: '/auth',

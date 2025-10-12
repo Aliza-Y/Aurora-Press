@@ -17,7 +17,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Please enter an email and password');
         }
 
-        await connectDB();
+        const db = await connectDB();
+        if (!db) {
+          throw new Error('Database connection failed. Please try again later.');
+        }
 
         // Find user
         const user = await User.findOne({ email: credentials.email });
@@ -54,7 +57,7 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development',
   pages: {
     signIn: '/auth',
     signOut: '/auth',

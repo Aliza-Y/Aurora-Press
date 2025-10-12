@@ -30,7 +30,7 @@ class IngestionAgent(BaseAgent):
         iid = pipeline.get("interview_id") or str(uuid.uuid4())
         ext = os.path.splitext(temp_file_path)[1] or ".wav"
         dst = os.path.join(UPLOAD_DIR, f"{iid}{ext}")
-        shutil.move(temp_file_path, dst)
+        shutil.copy2(temp_file_path, dst)
         duration = ffprobe_duration(dst)
         interviews.update_one(
             {"_id": iid},

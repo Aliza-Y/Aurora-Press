@@ -65,3 +65,15 @@ venv/
 
 # Large raw datasets
 module9_interview_ai/training/data/general_claim/*
+
+# Ignore models and heavy data
+*.pt
+*.bin
+*.safetensors
+*.pth
+*.mp3
+*.m4a
+module9_interview_ai/models/
+module9_interview_ai/uploads/
+aurorapress/module9_interview_ai/uploads/
+

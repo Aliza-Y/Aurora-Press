@@ -1,49 +1,93 @@
+import re
+from typing import List, Dict
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
 from ..orchestrator.base import BaseAgent, register
 from ..db import transcripts, analysis, quotes
 
+SENT_SPLIT = re.compile(r'(?<=[\.\!\?])\s+')
 
-def length_penalty(text: str) -> float:
+def _clean_text(t: str) -> str:
+    # light cleanup: drop stray artifacts (like ASR “Fact0”), fillers, extra spaces
+    t = re.sub(r'\bFact\d+\b', '', t)
+    t = re.sub(r'\b(uh|um|you know|like)\b', '', t, flags=re.I)
+    t = re.sub(r'\s+', ' ', t).strip()
+    return t
+
+def _split_into_sentences(text: str) -> List[str]:
+    text = _clean_text(text)
+    # fall back if no punctuation
+    if not re.search(r'[.!?]', text):
+        return [text] if text else []
+    return [s.strip() for s in SENT_SPLIT.split(text) if s.strip()]
+
+def _segment_score(seg: Dict) -> float:
+    """
+    Score prioritizes: high claim_conf, reasonable length (8–28 words), mild sentiment, contains numbers or nouns.
+    """
+    text = seg.get("text","")
     L = len(text.split())
-    return 1.0 if 8 <= L <= 28 else 0.6
+    len_bonus = 1.0 if 8 <= L <= 28 else 0.7
+    conf = float(seg.get("claim_conf", 0.0))
+    num_bonus = 1.15 if re.search(r'\d', text) else 1.0
+    return conf * len_bonus * num_bonus
 
+def _promote_sentence(sent: str) -> float:
+    # sentence-level bump if it looks like a crisp assertion
+    bump = 1.0
+    if re.search(r'\b(will|is|are|has|have|should|must|plans?|expects?)\b', sent, re.I):
+        bump *= 1.15
+    if re.search(r'\d', sent):
+        bump *= 1.10
+    return bump
+
+def mine_quotes(segments: List[Dict], min_conf: float = 0.60, top_k: int = 5) -> List[Dict]:
+    """
+    Extract quotable lines:
+      1) filter segments by claim_conf >= min_conf
+      2) split into sentences, score, choose best few
+    Returns: [{text, start, end, speaker, confidence, score}]
+    """
+    candidates = [s for s in segments if float(s.get("claim_conf", 0.0)) >= min_conf and _clean_text(s.get("text",""))]
+    if not candidates:
+        return []
+
+    scored = []
+    for s in candidates:
+        start, end, speaker = float(s.get("start",0)), float(s.get("end",0)), s.get("speaker","SPEAKER_00")
+        base = _segment_score(s)
+        sents = _split_into_sentences(s.get("text",""))
+        if not sents:
+            scored.append({
+                "text": _clean_text(s.get("text","")),
+                "start": start, "end": end, "speaker": speaker,
+                "confidence": float(s.get("claim_conf",0.0)),
+                "score": base
+            })
+            continue
+        # choose top sentence(s) within the segment
+        for sent in sents:
+            sc = base * _promote_sentence(sent)
+            scored.append({
+                "text": sent,
+                "start": start, "end": end, "speaker": speaker,
+                "confidence": float(s.get("claim_conf",0.0)),
+                "score": sc
+            })
+
+    scored.sort(key=lambda x: x["score"], reverse=True)
+    return scored[:top_k]
 
 @register
 class QuoteMinerAgent(BaseAgent):
     name = "QuoteMinerAgent"
-    
+
     def run(self, pipeline, tools):
         iid = pipeline["interview_id"]
-        tdoc = transcripts.find_one({"interview_id": iid})
-        adoc = analysis.find_one({"interview_id": iid})
-        if not tdoc or not adoc: raise RuntimeError("Transcript/Analysis missing.")
-        segs = tdoc["segments"]; texts = [s["text"] for s in segs]
-        if not texts: raise RuntimeError("No text to score.")
+        tdoc = transcripts.find_one({"interview_id": iid}) or {}
+        segs = tdoc.get("segments", [])
+        if not segs:
+            return {"quotes": 0}
 
-        tfidf = TfidfVectorizer(min_df=1)
-        tf = tfidf.fit_transform(texts).toarray()
-        tfscore = tf.sum(axis=1)
-
-        ent_idx = {e["segment_idx"] for e in adoc.get("entities", []) if e["label"] in ("PERSON","ORG")}
-        sent_map = {s["segment_idx"]: s["compound"] for s in adoc.get("sentiments", [])}
-
-        scores=[]
-        for i, s in enumerate(segs):
-            score = 0.5*tfscore[i] + 0.3*(1 if i in ent_idx else 0) + 0.2*abs(sent_map.get(i,0))
-            score *= length_penalty(s["text"])
-            scores.append(score)
-
-        order = list(np.argsort(scores))[::-1]
-        top_idx = order[: min(5, len(order))]
-        items=[]
-        for i in top_idx:
-            ctx_prev = segs[i-1]["text"] if i-1>=0 else ""
-            ctx_next = segs[i+1]["text"] if i+1<len(segs) else ""
-            items.append({
-                "text": segs[i]["text"], "start": segs[i]["start"], "end": segs[i]["end"],
-                "score": float(scores[i]), "entities": [], "sentiment": float(sent_map.get(i,0)),
-                "context": {"prev": ctx_prev, "next": ctx_next}
-            })
-        quotes.update_one({"interview_id": iid}, {"$set": {"items": items}}, upsert=True)
+        items = mine_quotes(segs, min_conf=0.60, top_k=5)
+        quotes.update_one({"interview_id": iid}, {"$set": {"quotes": items}}, upsert=True)
         return {"quotes": len(items)}

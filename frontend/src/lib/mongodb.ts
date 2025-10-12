@@ -8,10 +8,10 @@ declare global {
 }
 
 if (!process.env.MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env');
+  console.warn('MONGODB_URI not defined, MongoDB features will be disabled');
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/aurorapress';
 
 let cached = global.mongoose;
 
@@ -19,7 +19,7 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
-async function connectDB(): Promise<mongoose.Connection> {
+async function connectDB(): Promise<mongoose.Connection | null> {
   try {
     if (cached.conn) {
       console.log('Using cached MongoDB connection');
@@ -47,6 +47,9 @@ async function connectDB(): Promise<mongoose.Connection> {
       cached.promise = mongoose.connect(finalUri, opts).then((mongoose) => {
         console.log('MongoDB connected successfully');
         return mongoose.connection;
+      }).catch((error) => {
+        console.warn('MongoDB connection failed, continuing without database:', error.message);
+        return null;
       });
     }
 
@@ -55,12 +58,12 @@ async function connectDB(): Promise<mongoose.Connection> {
       return cached.conn;
     } catch (e) {
       cached.promise = null;
-      console.error('MongoDB connection error:', e);
-      throw e;
+      console.warn('MongoDB connection error, continuing without database:', e);
+      return null;
     }
   } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw new Error('Failed to connect to MongoDB');
+    console.warn('MongoDB connection error, continuing without database:', error);
+    return null;
   }
 }
 

@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { IconHome, IconArticle, IconChartBar, IconBulb, IconLogout } from '@tabler/icons-react';
+import { IconHome, IconArticle, IconChartBar, IconBulb, IconMicrophone, IconLogout } from '@tabler/icons-react';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -16,6 +16,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const navigationItems = [
     { name: 'Dashboard', href: '/dashboard', icon: IconHome },
     { name: 'My Articles', href: '/dashboard/articles', icon: IconArticle },
+    { name: 'Interview Intelligence', href: '/dashboard/interview', icon: IconMicrophone },
     { name: 'Audience Engagement', href: '/dashboard/engagement', icon: IconChartBar },
     { name: 'Recommendations', href: '/dashboard/recommendations', icon: IconBulb },
   ];
