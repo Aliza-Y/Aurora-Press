@@ -1,5 +1,5 @@
 # -----------------------------------
-# Node / Next.js (from teammate’s module)
+# Node / Next.js (frontend)
 # -----------------------------------
 node_modules/
 .pnp
@@ -19,15 +19,14 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # -----------------------------------
-# Python (your modules 2, 8, 9, etc.)
+# Python (backend modules)
 # -----------------------------------
 env/
+venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Logs and temp data
 *.log
 
 # -----------------------------------
@@ -45,7 +44,7 @@ __pycache__/
 next-env.d.ts
 
 # -----------------------------------
-# Jupyter (if you or teammates use it)
+# Jupyter (optional)
 # -----------------------------------
 .ipynb_checkpoints/
 
@@ -56,24 +55,20 @@ next-env.d.ts
 Thumbs.db
 
 # -----------------------------------
-# HuggingFace / Torch / Datasets cache
-# (keeps repo clean, avoids big files)
+# HuggingFace / Torch / Cache
 # -----------------------------------
 .cache/
-venv/
 
-
-# Large raw datasets
+# -----------------------------------
+# Datasets and large model checkpoints
+# -----------------------------------
 module9_interview_ai/training/data/general_claim/*
-
-# Ignore models and heavy data
+module9_interview_ai/models/
+module9_interview_ai/uploads/
+aurorapress/module9_interview_ai/uploads/
 *.pt
 *.bin
 *.safetensors
 *.pth
 *.mp3
 *.m4a
-module9_interview_ai/models/
-module9_interview_ai/uploads/
-aurorapress/module9_interview_ai/uploads/
-
