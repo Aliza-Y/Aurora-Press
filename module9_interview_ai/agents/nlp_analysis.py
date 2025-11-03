@@ -15,7 +15,7 @@ try:
     HAVE_VADER = True
 except ImportError:
     HAVE_VADER = False
-    print("Warning: vaderSentiment not available. Sentiment analysis will be disabled.")
+    # Silent warning - vaderSentiment is optional
 
 from ..orchestrator.base import BaseAgent, register
 from ..db import transcripts, analysis

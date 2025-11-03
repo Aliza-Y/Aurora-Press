@@ -5,3 +5,5 @@ pillow
 requests
 fastapi
 uvicorn
+psutil
+pydantic
